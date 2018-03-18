@@ -13,7 +13,7 @@ public class Sigmoid implements ActivationFunction {
         instance = new Sigmoid();
     }
 
-    public Sigmoid() {
+    private Sigmoid() {
         cache = new HashMap<>();
     }
 
