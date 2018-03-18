@@ -1,11 +1,20 @@
 package com.larregle.mnistlearning.functions;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class Sigmoid implements ActivationFunction {
 
     private static final Sigmoid instance;
 
+    private final Map<Double, Double> cache;
+
     static {
         instance = new Sigmoid();
+    }
+
+    public Sigmoid() {
+        cache = new HashMap<>();
     }
 
     public static Sigmoid getInstance() { return instance; }
@@ -19,7 +28,10 @@ public class Sigmoid implements ActivationFunction {
      */
     @Override
     public double activation(double z) {
-        return 1.0/(1.0 + Math.exp(z));
+        if (cache.get(z) == null) {
+            cache.put(z, 1.0/(1.0 + Math.exp(z)));
+        }
+        return cache.get(z);
     }
 
     /**
