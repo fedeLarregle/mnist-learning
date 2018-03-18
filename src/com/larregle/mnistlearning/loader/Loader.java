@@ -1,9 +1,8 @@
 package com.larregle.mnistlearning.loader;
 
-import java.io.DataInputStream;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.io.*;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -50,46 +49,74 @@ public final class Loader {
             int[] labels = new int[amountOfLabels];
 
             for (int i = 0; i < amountOfLabels; i++) {
-                labels[i] = dataInputStream.readInt();
+                labels[i] = dataInputStream.readInt() & 0xFF; // to unsigned
             }
             this.labels = labels;
         } catch (FileNotFoundException e) {
             logger.log(Level.WARNING, e.getMessage());
         } catch (IOException e) {
             logger.log(Level.SEVERE, e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
     /**
      * This method will extract all the images from a given "MNIST images file"
+     *
      * @param path to the MNIST images file
      */
     public final void loadImages(String path) {
-        try (DataInputStream dataInputStream = new DataInputStream(new FileInputStream(path))) {
-            if (dataInputStream.readInt() != IMAGE_MAGIC_NUMBER) {
-                throw new RuntimeException("Wrong image magic number.");
-            }
-            int amountOfImages = dataInputStream.readInt();
-            int rows = dataInputStream.readInt();
-            int cols = dataInputStream.readInt();
+        ByteBuffer byteBuffer = allocateBuffer(path);
+        int imageMagicNumber = byteBuffer.getInt();
 
-            for (int i = 0; i < amountOfImages; i++) {
-                images.add(readImage(rows, cols, dataInputStream));
-            }
-
-        } catch (FileNotFoundException e) {
-            logger.log(Level.WARNING, e.getMessage());
-        } catch (IOException e) {
-            logger.log(Level.SEVERE, e.getMessage());
+        if (imageMagicNumber != IMAGE_MAGIC_NUMBER) {
+            throw new RuntimeException("Wrong image magic number.");
         }
+
+        int amountOfImages = byteBuffer.getInt();
+        int rows = byteBuffer.getInt();
+        int cols = byteBuffer.getInt();
+
+        for (int i = 0; i < amountOfImages; i++) {
+            try {
+                images.add(readImage(rows, cols, byteBuffer));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
     }
 
-    private int[][] readImage(int rows, int cols, DataInputStream data) throws IOException {
+    private ByteBuffer allocateBuffer(String path) {
+        ByteBuffer byteBuffer = null;
+        ByteArrayOutputStream outputStream = null;
+
+        try (FileInputStream file = new FileInputStream(path); FileChannel fileChannel = file.getChannel()) {
+            int fileSize = (int) fileChannel.size();
+            byteBuffer = ByteBuffer.allocate((int) fileChannel.size());
+            fileChannel.read(byteBuffer);
+            byteBuffer.flip();
+            outputStream = new ByteArrayOutputStream();
+
+            for (int i = 0; i < fileSize; i++) {
+                outputStream.write(byteBuffer.get());
+            }
+
+        }catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            byteBuffer.clear();
+        }
+        return ByteBuffer.wrap(outputStream.toByteArray());
+    }
+
+    private int[][] readImage(int rows, int cols, ByteBuffer data) throws IOException {
         int [][] image = new int[rows][];
         for (int i = 0; i < rows; i++) {
             int[] row = new int[cols];
             for (int j = 0; j < cols; j++) {
-                 row[j] = data.readInt();
+                row[j] = data.get() & 0xFF; // To unsigned
             }
             image[i] = row;
         }
