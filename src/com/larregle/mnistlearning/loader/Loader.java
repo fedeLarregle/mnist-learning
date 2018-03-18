@@ -41,24 +41,19 @@ public final class Loader {
      * @param path to the MNIST labels file
      */
     public final void loadLabels(String path) {
-        try (DataInputStream dataInputStream = new DataInputStream(new FileInputStream(path))) {
-            if (dataInputStream.readInt() != LABEL_MAGIC_NUMBER) {
-                throw new RuntimeException("Wrong label magic number.");
-            }
-            int amountOfLabels = dataInputStream.readInt();
-            int[] labels = new int[amountOfLabels];
+        ByteBuffer buffer = allocateBuffer(path);
 
-            for (int i = 0; i < amountOfLabels; i++) {
-                labels[i] = dataInputStream.readInt() & 0xFF; // to unsigned
-            }
-            this.labels = labels;
-        } catch (FileNotFoundException e) {
-            logger.log(Level.WARNING, e.getMessage());
-        } catch (IOException e) {
-            logger.log(Level.SEVERE, e.getMessage());
-        } catch (Exception e) {
-            e.printStackTrace();
+        if (buffer.getInt() != LABEL_MAGIC_NUMBER) {
+            throw new RuntimeException("Wrong label magic number.");
         }
+        int amountOfLabels = buffer.getInt();
+        int[] labels = new int[amountOfLabels];
+
+        for (int i = 0; i < amountOfLabels; i++) {
+            labels[i] = buffer.get() & 0xFF; // to unsigned
+        }
+        this.labels = labels;
+
     }
 
     /**
@@ -68,9 +63,8 @@ public final class Loader {
      */
     public final void loadImages(String path) {
         ByteBuffer byteBuffer = allocateBuffer(path);
-        int imageMagicNumber = byteBuffer.getInt();
 
-        if (imageMagicNumber != IMAGE_MAGIC_NUMBER) {
+        if (byteBuffer.getInt() != IMAGE_MAGIC_NUMBER) {
             throw new RuntimeException("Wrong image magic number.");
         }
 
