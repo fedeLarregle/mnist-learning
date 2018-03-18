@@ -19,6 +19,15 @@ public class Network {
 
     public static Network getInstance() { return instance; }
 
+    /**
+     * Stochastic gradient descent
+     *
+     * @param epochs number of epochs to iterate through
+     * @param miniBatchSize size of mini batches to randomly pick
+     */
+    public final void SGD(int epochs, int miniBatchSize) { }
 
+
+    public final void updateBatch() { }
 
 }
